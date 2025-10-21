@@ -234,7 +234,7 @@
     </main>
   </div>
 
-  <!-- 詳細モーダル（閲覧・編集・削除） -->
+  <!-- 履歴詳細モーダル -->
   <div id="detail-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <button class="close-btn" aria-label="閉じる">&times;</button>
@@ -264,6 +264,49 @@
           <button type="button" id="detail-cancel" class="secondary-btn">閉じる</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- アプローチモーダル -->
+  <div id="approach-modal" class="modal" aria-hidden="true">
+    <div class="modal-content large">
+      <button class="close-btn" aria-label="閉じる">&times;</button>
+      <h2 id="approach-modal-title">企業へのアプローチ</h2>
+      <div class="approach-modal-body">
+        <!-- 左：新規追加フォーム -->
+        <div class="form-container">
+          <h3>新規アプローチの追加</h3>
+          <form id="approach-form" autocomplete="off">
+            <input type="hidden" id="approach-company-name"/>
+            <label for="approach-media-select">媒体</label>
+            <select id="approach-media-select" required>
+              <option value="">（未選択）</option>
+              <option value="新規">新規</option>
+              <option value="知人・紹介">知人・紹介</option>
+              <option value="テックユーザー">テックユーザー</option>
+            </select>
+            <label for="approach-note">アプローチ内容</label>
+            <textarea id="approach-note" placeholder="アプローチ内容" rows="5" required></textarea>
+            <button type="submit" class="primary-btn">履歴を追加</button>
+          </form>
+        </div>
+        <!-- 右：過去の履歴 -->
+        <div class="history-log-wrapper">
+          <h3>過去の履歴</h3>
+          <div id="approach-history-log" class="history-log scrollbox">
+            <table id="approach-history-table">
+              <thead>
+                <tr>
+                  <th scope="col">日時</th>
+                  <th scope="col">媒体</th>
+                  <th scope="col">内容</th>
+                </tr>
+              </thead>
+              <tbody id="approach-history-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

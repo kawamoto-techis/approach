@@ -201,6 +201,21 @@ td input, td textarea {
   position:relative; box-shadow:0 16px 48px rgba(0,0,0,.18);
   border:1px solid var(--line);
 }
+.modal-content.large {
+  width: min(1100px, 95vw);
+}
+.approach-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 16px;
+  align-items: start;
+  max-height: calc(80vh - 80px);
+  overflow-y: auto;
+}
+#approach-history-log {
+  height: 100%;
+  min-height: 300px;
+}
 .modal-content h2{ margin:0 0 10px; }
 .modal-content form{ display:grid; grid-template-columns:1fr; gap:10px; }
 .modal-content label{ font-weight:700; }

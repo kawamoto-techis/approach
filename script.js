@@ -160,6 +160,51 @@ const detailNoteEl    = $("#detail-note");
 const detailDeleteBtn = $("#detail-delete");
 const detailCancelBtn = $("#detail-cancel");
 
+const approachModal = $("#approach-modal");
+const approachModalTitle = $("#approach-modal-title");
+const approachForm = $("#approach-form");
+const approachCompanyNameEl = $("#approach-company-name");
+const approachMediaSelectEl = $("#approach-media-select");
+const approachNoteEl = $("#approach-note");
+const approachHistoryTbody = $("#approach-history-table-body");
+const approachModalCloseBtn = approachModal?.querySelector(".close-btn");
+
+const openApproachModal = (companyName) => {
+  if (!approachModal) return;
+  approachModalTitle.textContent = `${companyName} へのアプローチ`;
+  approachCompanyNameEl.value = companyName;
+
+  const companyHistory = historyData
+    .filter(item => item.company === companyName)
+    .sort((a, b) => (parseToDate(b.createdAt)?.getTime() ?? 0) - (parseToDate(a.createdAt)?.getTime() ?? 0));
+
+  approachHistoryTbody.innerHTML = "";
+  companyHistory.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${fmtDisplay(item.createdAt)}</td>
+      <td>${escapeCsv(item.media)}</td>
+      <td>${escapeCsv(item.note)}</td>
+    `;
+    approachHistoryTbody.appendChild(tr);
+  });
+
+  approachModal.classList.add("active");
+  approachModal.setAttribute("aria-hidden", "false");
+};
+
+const closeApproachModal = () => {
+  if (!approachModal) return;
+  approachModal.classList.remove("active");
+  approachModal.setAttribute("aria-hidden", "true");
+  approachForm.reset();
+};
+
+approachModalCloseBtn?.addEventListener("click", closeApproachModal);
+window.addEventListener("click", (e) => { if (e.target === approachModal) closeApproachModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && approachModal?.classList.contains("active")) closeApproachModal(); });
+
+
 /* ---- タブ切替 & 右上ショートカット ------------------------------ */
 const showPage = (id) => {
   pages.forEach(p => p.classList.remove("active"));
@@ -261,6 +306,7 @@ const renderContacts = () => {
         <td>${escapeCsv(item.tel)}</td>
         <td>${escapeCsv(item.memo)}</td>
         <td>
+          <button class="primary-btn approach-contact-btn" data-id="${item.id}" data-company="${escapeCsv(item.company)}">アプローチ</button>
           <button class="secondary-btn edit-contact-btn" data-id="${item.id}">編集</button>
           <button class="danger-btn delete-contact-btn" data-id="${item.id}">削除</button>
         </td>
@@ -373,7 +419,10 @@ contactsTbody?.addEventListener("click", (e) => {
   const id = target.dataset.id;
   if (!id) return;
 
-  if (target.classList.contains("delete-contact-btn")) {
+  if (target.classList.contains("approach-contact-btn")) {
+    const companyName = target.dataset.company;
+    openApproachModal(companyName);
+  } else if (target.classList.contains("delete-contact-btn")) {
     if (confirm("この連絡先を削除しますか？")) {
       contactsData = contactsData.filter(item => item.id !== id);
       saveLocal();
@@ -413,6 +462,38 @@ contactsTbody?.addEventListener("click", (e) => {
     renderContacts();
   } else if (target.classList.contains("cancel-edit-btn")) {
     renderContacts();
+  }
+});
+
+approachForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const companyName = approachCompanyNameEl.value;
+  if (!companyName) return;
+
+  const item = {
+    id: uuid(),
+    createdAt: new Date().toISOString(),
+    company: companyName,
+    media: approachMediaSelectEl.value.trim(),
+    note: approachNoteEl.value.trim(),
+  };
+
+  historyData.push(item);
+  saveLocal();
+  renderAll(); // メインの履歴テーブルも更新
+
+  // モーダル内の履歴を再描画し、フォームをリセット
+  openApproachModal(companyName);
+  approachMediaSelectEl.value = "";
+  approachNoteEl.value = "";
+  approachNoteEl.focus();
+
+  try {
+    await apiPost({ action: "upsertHistory", item });
+    toast("GASへ保存しました。", "ok");
+  } catch (err) {
+    toast("GAS保存に失敗。公開設定とexec URLを確認。", "error");
+    console.error(err);
   }
 });
 
