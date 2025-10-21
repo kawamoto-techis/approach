@@ -17,6 +17,7 @@
       <button class="tab-btn" data-target="#page-kigyou">企業</button>
       <button class="tab-btn" data-target="#page-mikomi">見込</button>
       <button class="tab-btn" data-target="#page-botsu">没</button>
+      <button class="tab-btn" data-target="#page-contacts">連絡先</button>
 
       <!-- 履歴一覧の時だけ表示（script.js が制御） -->
       <div id="top-quick-links" class="top-right-links" style="display:none;">
@@ -186,6 +187,48 @@
           <button id="botsu-export-btn" class="secondary-btn">エクスポート</button>
           <button id="botsu-save-btn" class="primary-btn">保存（GASへ）</button>
           <button id="botsu-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
+        </div>
+      </section>
+
+      <!-- ⑥ 連絡先リスト -->
+      <section id="page-contacts" class="page-content">
+        <div class="form-container">
+          <h2>連絡先の新規追加</h2>
+          <form id="contacts-form" autocomplete="off">
+            <input type="text" id="contact-company" placeholder="企業名" required/>
+            <input type="text" id="contact-name" placeholder="担当者名"/>
+            <input type="email" id="contact-email" placeholder="メールアドレス"/>
+            <input type="tel" id="contact-tel" placeholder="電話番号"/>
+            <textarea id="contact-memo" placeholder="メモ" rows="3"></textarea>
+            <button type="submit" class="primary-btn">連絡先を追加</button>
+          </form>
+        </div>
+
+        <div class="history-log-wrapper">
+          <div class="search-container simple">
+            <input type="text" id="contacts-search-box" placeholder="企業名・担当者名などで検索…"/>
+          </div>
+          <div class="data-io-buttons">
+            <input type="file" id="contacts-import-file" accept=".csv" style="display:none;"/>
+            <button id="contacts-import-btn" class="secondary-btn">連絡先をインポート</button>
+            <button id="contacts-export-btn" class="secondary-btn">連絡先をエクスポート</button>
+          </div>
+          <div class="history-log scrollbox">
+            <h2>連絡先一覧</h2>
+            <table id="contacts-table">
+              <thead>
+                <tr>
+                  <th scope="col">企業名</th>
+                  <th scope="col">担当者名</th>
+                  <th scope="col">メールアドレス</th>
+                  <th scope="col">電話番号</th>
+                  <th scope="col">メモ</th>
+                  <th scope="col">操作</th>
+                </tr>
+              </thead>
+              <tbody id="contacts-table-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>

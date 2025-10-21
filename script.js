@@ -77,6 +77,7 @@ let kigyouWords = JSON.parse(localStorage.getItem("kigyouList")) || [];
 let mikomiWords = JSON.parse(localStorage.getItem("mikomiList")) || [];
 let botsuWords  = JSON.parse(localStorage.getItem("botsuList"))  || [];
 let historyData = JSON.parse(localStorage.getItem("historyData")) || [];
+let contactsData = JSON.parse(localStorage.getItem("contactsData")) || [];
 let kigyouSet = new Set(kigyouWords.map(norm));
 let mikomiSet = new Set(mikomiWords.map(norm));
 let botsuSet  = new Set(botsuWords.map(norm));
@@ -86,6 +87,7 @@ const saveLocal = () => {
   localStorage.setItem("mikomiList", JSON.stringify(mikomiWords));
   localStorage.setItem("botsuList",  JSON.stringify(botsuWords));
   localStorage.setItem("historyData", JSON.stringify(historyData));
+  localStorage.setItem("contactsData", JSON.stringify(contactsData));
 };
 
 /* ---- DOM -------------------------------------------------------- */
@@ -134,6 +136,18 @@ const mikomiSaveBtn  = $("#mikomi-save-btn");
 const mikomiReloadBtn= $("#mikomi-reload-btn");
 const botsuSaveBtn   = $("#botsu-save-btn");
 const botsuReloadBtn = $("#botsu-reload-btn");
+
+const contactsForm = $("#contacts-form");
+const contactCompanyEl = $("#contact-company");
+const contactNameEl = $("#contact-name");
+const contactEmailEl = $("#contact-email");
+const contactTelEl = $("#contact-tel");
+const contactMemoEl = $("#contact-memo");
+const contactsSearchBox = $("#contacts-search-box");
+const contactsTbody = $("#contacts-table-body");
+const contactsImportBtn = $("#contacts-import-btn");
+const contactsExportBtn = $("#contacts-export-btn");
+const contactsImportFile = $("#contacts-import-file");
 
 const modal           = $("#detail-modal");
 const modalCloseBtn   = modal?.querySelector(".close-btn");
@@ -230,7 +244,30 @@ const renderFull = () => {
   });
 };
 
-const renderAll = () => { renderMini(); renderFull(); };
+const renderAll = () => { renderMini(); renderFull(); renderContacts(); };
+
+const renderContacts = () => {
+  if (!contactsTbody) return;
+  const q = (contactsSearchBox?.value || "").toLowerCase();
+  contactsTbody.innerHTML = "";
+  contactsData
+    .filter(it => it.company.toLowerCase().includes(q) || it.name.toLowerCase().includes(q) || it.email.toLowerCase().includes(q) || it.tel.toLowerCase().includes(q) || it.memo.toLowerCase().includes(q))
+    .forEach(item => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeCsv(item.company)}</td>
+        <td>${escapeCsv(item.name)}</td>
+        <td>${escapeCsv(item.email)}</td>
+        <td>${escapeCsv(item.tel)}</td>
+        <td>${escapeCsv(item.memo)}</td>
+        <td>
+          <button class="secondary-btn edit-contact-btn" data-id="${item.id}">編集</button>
+          <button class="danger-btn delete-contact-btn" data-id="${item.id}">削除</button>
+        </td>
+      `;
+      contactsTbody.appendChild(tr);
+    });
+};
 
 /* ---- 検索/フィルタ ----------------------------------------------- */
 searchBoxMini?.addEventListener("input", renderMini);
@@ -243,6 +280,7 @@ clearFilters2?.addEventListener("click", () => {
   searchBox2   && (searchBox2.value   = "");
   renderFull();
 });
+contactsSearchBox?.addEventListener("input", renderContacts);
 
 /* ---- 折りたたみ ------------------------------------------------- */
 const setCollapsedAll = (collapse) => { $$(".note-cell", $("#page-history-list")).forEach(td => collapse ? td.dataset.collapsed="1" : delete td.dataset.collapsed); };
@@ -312,6 +350,72 @@ detailDeleteBtn?.addEventListener("click", async () => {
   } catch (err) { toast("削除に失敗：GASを確認してください。", "error"); console.error(err); }
 });
 
+/* ---- 連絡先：追加/更新/削除 ----------------------------------- */
+contactsForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const item = {
+    id: uuid(),
+    company: contactCompanyEl.value.trim(),
+    name: contactNameEl.value.trim(),
+    email: contactEmailEl.value.trim(),
+    tel: contactTelEl.value.trim(),
+    memo: contactMemoEl.value.trim(),
+  };
+  contactsData.push(item);
+  saveLocal();
+  renderContacts();
+  contactsForm.reset();
+  contactCompanyEl.focus();
+});
+
+contactsTbody?.addEventListener("click", (e) => {
+  const target = e.target;
+  const id = target.dataset.id;
+  if (!id) return;
+
+  if (target.classList.contains("delete-contact-btn")) {
+    if (confirm("この連絡先を削除しますか？")) {
+      contactsData = contactsData.filter(item => item.id !== id);
+      saveLocal();
+      renderContacts();
+    }
+  } else if (target.classList.contains("edit-contact-btn")) {
+    const item = contactsData.find(item => item.id === id);
+    if (!item) return;
+
+    const tr = target.closest("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${escapeCsv(item.company)}" class="edit-company"></td>
+      <td><input type="text" value="${escapeCsv(item.name)}" class="edit-name"></td>
+      <td><input type="email" value="${escapeCsv(item.email)}" class="edit-email"></td>
+      <td><input type="tel" value="${escapeCsv(item.tel)}" class="edit-tel"></td>
+      <td><textarea class="edit-memo">${escapeCsv(item.memo)}</textarea></td>
+      <td>
+        <button class="primary-btn save-contact-btn" data-id="${id}">保存</button>
+        <button class="secondary-btn cancel-edit-btn" data-id="${id}">キャンセル</button>
+      </td>
+    `;
+  } else if (target.classList.contains("save-contact-btn")) {
+    const tr = target.closest("tr");
+    const updatedItem = {
+      id,
+      company: tr.querySelector(".edit-company").value.trim(),
+      name: tr.querySelector(".edit-name").value.trim(),
+      email: tr.querySelector(".edit-email").value.trim(),
+      tel: tr.querySelector(".edit-tel").value.trim(),
+      memo: tr.querySelector(".edit-memo").value.trim(),
+    };
+    const index = contactsData.findIndex(item => item.id === id);
+    if (index !== -1) {
+      contactsData[index] = updatedItem;
+      saveLocal();
+    }
+    renderContacts();
+  } else if (target.classList.contains("cancel-edit-btn")) {
+    renderContacts();
+  }
+});
+
 /* ---- CSV（履歴/各リスト） -------------------------------------- */
 const escapeCsv = (v) => { const s = String(v ?? ""); return (/[",\n]/.test(s)) ? `"${s.replace(/"/g, '""')}"` : s; };
 const downloadCsv = (text, filename) => { const blob=new Blob([text],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); };
@@ -367,6 +471,55 @@ botsuImportBtn ?.addEventListener("click", () => botsuImportFile.click());
 kigyouImportFile?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "kigyou"));
 mikomiImportFile?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "mikomi"));
 botsuImportFile ?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "botsu"));
+
+const exportContactsCsv = () => {
+  const headers = ["id", "company", "name", "email", "tel", "memo"];
+  let csv = headers.join(",") + "\n";
+  contactsData.forEach(it => {
+    csv += [
+      escapeCsv(it.id),
+      escapeCsv(it.company),
+      escapeCsv(it.name),
+      escapeCsv(it.email),
+      escapeCsv(it.tel),
+      escapeCsv(it.memo)
+    ].join(",") + "\n";
+  });
+  downloadCsv(csv, "連絡先リスト.csv");
+};
+contactsExportBtn?.addEventListener("click", exportContactsCsv);
+
+const importContactsCsv = (file) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let text = String(reader.result);
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (!lines.length) return;
+    const header = lines[0].split(",").map(h => h.trim().replace(/^\uFEFF/, ""));
+    const hasId = header.includes("id");
+    const dataLines = (header.length >= 5) ? lines.slice(1) : lines;
+    const imported = dataLines.map(line => {
+      const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, "").replace(/""/g, '"'));
+      let id, company, name, email, tel, memo;
+      if (hasId) {
+        [id, company, name, email, tel, memo] = cols;
+      } else {
+        [company, name, email, tel, memo] = cols;
+        id = uuid();
+      }
+      return { id, company, name, email, tel, memo };
+    });
+    if (confirm("現在の連絡先を上書きしてインポートしますか？")) {
+      contactsData = imported;
+      saveLocal();
+      renderContacts();
+    }
+  };
+  reader.readAsText(file);
+};
+contactsImportBtn?.addEventListener("click", () => contactsImportFile.click());
+contactsImportFile?.addEventListener("change", (e) => { if (e.target.files?.length) importContactsCsv(e.target.files[0]); });
 
 /* ---- リスト 双方向API ------------------------------------------ */
 const pushListsToGAS = async () => {

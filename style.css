@@ -157,6 +157,13 @@ tbody tr:nth-child(even){ background:#fbfcfd; }
 tbody tr:hover{ background:#f2f7f8; }
 tbody tr[role="button"]{ cursor:pointer; }
 
+td input, td textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 /* ステータス色分け（企業=ブランド色で強調） */
 .status-kigyou td{ background: var(--brand) !important; color:#fff !important; }
 .status-kigyou td a{ color:#fff; text-decoration: underline; }
