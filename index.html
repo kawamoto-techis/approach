@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>アプローチシステム</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>アプローチシステム</h1>
+
+    <!-- タブ + 右上ショートカット -->
+    <nav class="tab-nav">
+      <button class="tab-btn" data-target="#page-history">履歴</button>
+      <button class="tab-btn active" data-target="#page-history-list">履歴一覧</button>
+      <button class="tab-btn" data-target="#page-kigyou">企業</button>
+      <button class="tab-btn" data-target="#page-mikomi">見込</button>
+      <button class="tab-btn" data-target="#page-botsu">没</button>
+
+      <!-- 履歴一覧の時だけ表示（script.js が制御） -->
+      <div id="top-quick-links" class="top-right-links" style="display:none;">
+        <a class="link-btn app-btn"
+           href="https://keep.google.com/u/0/"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="Google Keep を新しいタブで開く">
+          Keepを開く
+        </a>
+        <a class="link-btn app-btn"
+           href="https://calendar.google.com/calendar/u/0/r/week"
+           target="_blank" rel="noopener noreferrer"
+           aria-label="Googleカレンダー（週表示）を新しいタブで開く">
+          Googleカレンダー
+        </a>
+      </div>
+    </nav>
+
+    <main class="page-container">
+
+      <!-- ① 履歴（登録＋簡易一覧） -->
+      <section id="page-history" class="page-content">
+        <!-- 左：新規追加フォーム -->
+        <div class="form-container">
+          <h2>履歴の新規追加</h2>
+          <form id="history-form" autocomplete="off">
+            <input type="text" id="company-name" placeholder="企業名" required/>
+
+            <label for="media-select">媒体</label>
+            <select id="media-select" required>
+              <option value="">（未選択）</option>
+              <option value="新規">新規</option>
+              <option value="知人・紹介">知人・紹介</option>
+              <option value="テックユーザー">テックユーザー</option>
+            </select>
+
+            <textarea id="history-note" placeholder="アプローチ内容" rows="5" required></textarea>
+
+            <button type="submit" class="primary-btn">履歴を追加</button>
+          </form>
+
+          <div class="data-io-buttons">
+            <input type="file" id="history-import-file" accept=".csv" style="display:none;"/>
+            <button id="history-import-btn" class="secondary-btn">履歴をインポート</button>
+            <button id="history-export-btn" class="secondary-btn">履歴をエクスポート</button>
+          </div>
+        </div>
+
+        <!-- 右：ミニ検索＋簡易一覧 -->
+        <div class="history-log-wrapper">
+          <div class="search-container simple">
+            <input type="text" id="search-box" placeholder="企業名・媒体・内容で検索…"/>
+          </div>
+
+          <div class="history-log scrollbox" aria-live="polite" aria-busy="false">
+            <h2>アプローチ履歴一覧</h2>
+            <table id="history-table">
+              <thead>
+                <tr>
+                  <th scope="col">日時</th>
+                  <th scope="col">企業名</th>
+                  <th scope="col">媒体</th>
+                  <th scope="col">内容</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ② 履歴一覧（閲覧専用：メモ＋フィルタ＋広い一覧） -->
+      <section id="page-history-list" class="page-content active">
+        <div class="search-container hl-layout">
+          <!-- 左：クイックメモ -->
+          <div class="memo-panel">
+            <h2>クイックメモ</h2>
+            <textarea id="quick-memo" placeholder="今考えていること・TODO など自由にメモ"></textarea>
+            <div class="memo-actions">
+              <span id="memo-status" class="memo-status">ローカル保存済み</span>
+              <div class="memo-actions-right">
+                <button id="quick-memo-save" class="primary-btn">保存</button>
+                <button id="quick-memo-clear" class="secondary-btn">クリア</button>
+              </div>
+            </div>
+            <p class="memo-hint">※メモはこの端末のローカルに保存されます。</p>
+          </div>
+
+          <!-- 右：フィルタ -->
+          <div class="filter-panel">
+            <div class="filter-row">
+              <div class="filter-cell">
+                <label for="month-filter-2">月で絞り込み:</label>
+                <input type="month" id="month-filter-2"/>
+              </div>
+              <div class="filter-cell">
+                <label for="sort-order-2">並び替え:</label>
+                <select id="sort-order-2">
+                  <option value="desc">新しい順</option>
+                  <option value="asc">古い順</option>
+                </select>
+              </div>
+              <button id="clear-filters-2" class="secondary-btn clear-right">クリア</button>
+            </div>
+            <input type="text" id="search-box-2" placeholder="企業名・媒体・内容で検索…"/>
+          </div>
+        </div>
+
+        <div class="history-log-wrapper">
+          <div style="display:flex; justify-content:flex-end; margin:4px 0 8px;">
+            <button id="collapse-all" class="secondary-btn">展開する</button>
+          </div>
+
+        <div class="history-log scrollbox" aria-live="polite" aria-busy="false">
+            <h2>アプローチ履歴一覧（閲覧用）</h2>
+            <table id="history-table-2">
+              <thead>
+                <tr>
+                  <th scope="col">日時</th>
+                  <th scope="col">企業名</th>
+                  <th scope="col">媒体</th>
+                  <th scope="col">内容</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body-2"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ③ 企業リスト -->
+      <section id="page-kigyou" class="page-content">
+        <h2>企業リスト</h2>
+        <p>ここに登録した企業名は、履歴で <span class="color-chip kigyou">この色</span> で表示されます。</p>
+        <textarea id="kigyou-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
+        <div class="data-io-buttons">
+          <input type="file" id="kigyou-import-file" accept=".csv" style="display:none;"/>
+          <button id="kigyou-import-btn" class="secondary-btn">インポート</button>
+          <button id="kigyou-export-btn" class="secondary-btn">エクスポート</button>
+          <button id="kigyou-save-btn" class="primary-btn">保存（GASへ）</button>
+          <button id="kigyou-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
+        </div>
+      </section>
+
+      <!-- ④ 見込みリスト -->
+      <section id="page-mikomi" class="page-content">
+        <h2>見込みリスト</h2>
+        <p>ここに登録した企業名は、履歴で <span class="color-chip mikomi">この色</span> で表示されます。</p>
+        <textarea id="mikomi-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
+        <div class="data-io-buttons">
+          <input type="file" id="mikomi-import-file" accept=".csv" style="display:none;"/>
+          <button id="mikomi-import-btn" class="secondary-btn">インポート</button>
+          <button id="mikomi-export-btn" class="secondary-btn">エクスポート</button>
+          <button id="mikomi-save-btn" class="primary-btn">保存（GASへ）</button>
+          <button id="mikomi-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
+        </div>
+      </section>
+
+      <!-- ⑤ 没リスト -->
+      <section id="page-botsu" class="page-content">
+        <h2>没リスト</h2>
+        <p>ここに登録した企業名は、履歴で <span class="color-chip botsu">この色</span> で表示されます。（最優先）</p>
+        <textarea id="botsu-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
+        <div class="data-io-buttons">
+          <input type="file" id="botsu-import-file" accept=".csv" style="display:none;"/>
+          <button id="botsu-import-btn" class="secondary-btn">インポート</button>
+          <button id="botsu-export-btn" class="secondary-btn">エクスポート</button>
+          <button id="botsu-save-btn" class="primary-btn">保存（GASへ）</button>
+          <button id="botsu-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 詳細モーダル（閲覧・編集・削除） -->
+  <div id="detail-modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <button class="close-btn" aria-label="閉じる">&times;</button>
+      <h2>履歴の詳細</h2>
+      <form id="detail-form">
+        <label for="detail-created">日時</label>
+        <input type="text" id="detail-created" readonly/>
+
+        <input type="hidden" id="detail-id"/>
+
+        <label for="detail-company">企業名</label>
+        <input type="text" id="detail-company" required/>
+
+        <label for="detail-media">媒体</label>
+        <select id="detail-media" required>
+          <option value="新規">新規</option>
+          <option value="知人・紹介">知人・紹介</option>
+          <option value="テックユーザー">テックユーザー</option>
+        </select>
+
+        <label for="detail-note">アプローチ内容</label>
+        <textarea id="detail-note" rows="6" required></textarea>
+
+        <div class="modal-actions">
+          <button type="button" id="detail-delete" class="danger-btn">削除</button>
+          <button type="submit" class="primary-btn">保存</button>
+          <button type="button" id="detail-cancel" class="secondary-btn">閉じる</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
