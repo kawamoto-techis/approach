@@ -170,10 +170,26 @@ const approachNoteEl = $("#approach-note");
 const approachHistoryTbody = $("#approach-history-table-body");
 const approachModalCloseBtn = approachModal?.querySelector(".close-btn");
 
-const openApproachModal = (companyName) => {
-  if (!approachModal) return;
+const openApproachModal = (contact) => {
+  if (!approachModal || !contact) return;
+  const companyName = contact.company;
+
   approachModalTitle.textContent = `${companyName} へのアプローチ`;
   approachCompanyNameEl.value = companyName;
+
+  const detailsEl = $("#approach-contact-details");
+  if (detailsEl) {
+    detailsEl.innerHTML = `
+      <h4 style="margin:0 0 8px;">連絡先情報</h4>
+      <p style="margin:0; font-size:14px; line-height:1.7;">
+        <strong>担当者:</strong> ${escapeCsv(contact.name) || '(記載なし)'}<br>
+        <strong>Email:</strong> ${contact.email ? `<a href="mailto:${contact.email}">${escapeCsv(contact.email)}</a>` : '(記載なし)'}<br>
+        <strong>電話:</strong> ${contact.tel ? `<a href="tel:${contact.tel}">${escapeCsv(contact.tel)}</a>` : '(記載なし)'}<br>
+        <strong>メモ:</strong>
+        <pre style="margin:0; padding: 4px; white-space: pre-wrap; word-break: break-all; font:inherit; background:#fff;">${escapeCsv(contact.memo) || '(記載なし)'}</pre>
+      </p>
+    `;
+  }
 
   const companyHistory = historyData
     .filter(item => item.company === companyName)
@@ -324,12 +340,10 @@ const renderContacts = () => {
       tr.innerHTML = `
         <td>${escapeCsv(item.company)}</td>
         <td>${escapeCsv(item.name)}</td>
-        <td>${escapeCsv(item.email)}</td>
         <td>${escapeCsv(item.tel)}</td>
-        <td>${escapeCsv(item.memo)}</td>
         <td>${escapeCsv(item.status)}</td>
         <td>
-          <button class="primary-btn approach-contact-btn" data-id="${item.id}" data-company="${escapeCsv(item.company)}">アプローチ</button>
+          <button class="primary-btn approach-contact-btn" data-id="${item.id}">アプローチ</button>
           <button class="secondary-btn edit-contact-btn" data-id="${item.id}">編集</button>
           <button class="danger-btn delete-contact-btn" data-id="${item.id}">削除</button>
         </td>
@@ -444,8 +458,8 @@ contactsTbody?.addEventListener("click", (e) => {
   if (!id) return;
 
   if (target.classList.contains("approach-contact-btn")) {
-    const companyName = target.dataset.company;
-    openApproachModal(companyName);
+    const contact = contactsData.find(c => c.id === id);
+    if (contact) openApproachModal(contact);
   } else if (target.classList.contains("delete-contact-btn")) {
     if (confirm("この連絡先を削除しますか？")) {
       contactsData = contactsData.filter(item => item.id !== id);
@@ -458,11 +472,14 @@ contactsTbody?.addEventListener("click", (e) => {
 
     const tr = target.closest("tr");
     tr.innerHTML = `
-      <td><input type="text" value="${escapeCsv(item.company)}" class="edit-company"></td>
-      <td><input type="text" value="${escapeCsv(item.name)}" class="edit-name"></td>
-      <td><input type="email" value="${escapeCsv(item.email)}" class="edit-email"></td>
-      <td><input type="tel" value="${escapeCsv(item.tel)}" class="edit-tel"></td>
-      <td><textarea class="edit-memo">${escapeCsv(item.memo)}</textarea></td>
+      <td>
+        <input type="text" value="${escapeCsv(item.company)}" class="edit-company" placeholder="企業名" style="margin-bottom:4px;">
+        <input type="text" value="${escapeCsv(item.name)}" class="edit-name" placeholder="担当者名">
+      </td>
+      <td>
+        <input type="tel" value="${escapeCsv(item.tel)}" class="edit-tel" placeholder="電話番号" style="margin-bottom:4px;">
+        <input type="email" value="${escapeCsv(item.email)}" class="edit-email" placeholder="メールアドレス">
+      </td>
       <td>
         <select class="edit-status">
           <option value="" ${!item.status ? 'selected' : ''}>（未選択）</option>
@@ -471,9 +488,12 @@ contactsTbody?.addEventListener("click", (e) => {
           <option value="没" ${item.status === '没' ? 'selected' : ''}>没</option>
         </select>
       </td>
-      <td>
-        <button class="primary-btn save-contact-btn" data-id="${id}">保存</button>
-        <button class="secondary-btn cancel-edit-btn" data-id="${id}">キャンセル</button>
+      <td colspan="2">
+        <textarea class="edit-memo" placeholder="メモ" style="width:100%; min-height:58px;">${escapeCsv(item.memo)}</textarea>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+          <button class="primary-btn save-contact-btn" data-id="${id}">保存</button>
+          <button class="secondary-btn cancel-edit-btn" data-id="${id}">キャンセル</button>
+        </div>
       </td>
     `;
   } else if (target.classList.contains("save-contact-btn")) {
