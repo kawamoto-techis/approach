@@ -88,6 +88,7 @@ const saveLocal = () => {
   localStorage.setItem("botsuList",  JSON.stringify(botsuWords));
   localStorage.setItem("historyData", JSON.stringify(historyData));
   localStorage.setItem("contactsData", JSON.stringify(contactsData));
+  refreshCompanyStatusMap();
 };
 
 /* ---- DOM -------------------------------------------------------- */
@@ -216,11 +217,32 @@ const showPage = (id) => {
 tabBtns.forEach(btn => btn.addEventListener("click", () => showPage(btn.dataset.target)));
 
 /* ---- 行ステータス ------------------------------------------------ */
+let companyStatusMap = new Map();
+const refreshCompanyStatusMap = () => {
+  companyStatusMap.clear();
+  for (const contact of contactsData) {
+    const companyNorm = norm(contact.company);
+    // 連絡先リストのステータスをマップに登録（最初の有効なステータスを優先）
+    if (companyNorm && contact.status && !companyStatusMap.has(companyNorm)) {
+      companyStatusMap.set(companyNorm, contact.status);
+    }
+  }
+};
+
 const getStatusClass = (company) => {
-  const k = norm(company);
-  if (botsuSet.has(k))  return "status-botsu";
-  if (kigyouSet.has(k)) return "status-kigyou";
-  if (mikomiSet.has(k)) return "status-mikomi";
+  const companyNorm = norm(company);
+  const status = companyStatusMap.get(companyNorm);
+
+  // 連絡先タブのステータスを最優先で適用
+  if (status === 'ユーザー') return 'status-kigyou';
+  if (status === '見込') return 'status-mikomi';
+  if (status === '没') return 'status-botsu';
+
+  // 連絡先にステータスがない場合、古いリストをフォールバックとして参照
+  if (botsuSet.has(companyNorm))  return "status-botsu";
+  if (kigyouSet.has(companyNorm)) return "status-kigyou";
+  if (mikomiSet.has(companyNorm)) return "status-mikomi";
+
   return "";
 };
 
@@ -305,6 +327,7 @@ const renderContacts = () => {
         <td>${escapeCsv(item.email)}</td>
         <td>${escapeCsv(item.tel)}</td>
         <td>${escapeCsv(item.memo)}</td>
+        <td>${escapeCsv(item.status)}</td>
         <td>
           <button class="primary-btn approach-contact-btn" data-id="${item.id}" data-company="${escapeCsv(item.company)}">アプローチ</button>
           <button class="secondary-btn edit-contact-btn" data-id="${item.id}">編集</button>
@@ -406,6 +429,7 @@ contactsForm?.addEventListener("submit", (e) => {
     email: contactEmailEl.value.trim(),
     tel: contactTelEl.value.trim(),
     memo: contactMemoEl.value.trim(),
+    status: "",
   };
   contactsData.push(item);
   saveLocal();
@@ -440,6 +464,14 @@ contactsTbody?.addEventListener("click", (e) => {
       <td><input type="tel" value="${escapeCsv(item.tel)}" class="edit-tel"></td>
       <td><textarea class="edit-memo">${escapeCsv(item.memo)}</textarea></td>
       <td>
+        <select class="edit-status">
+          <option value="" ${!item.status ? 'selected' : ''}>（未選択）</option>
+          <option value="ユーザー" ${item.status === 'ユーザー' ? 'selected' : ''}>ユーザー</option>
+          <option value="見込" ${item.status === '見込' ? 'selected' : ''}>見込</option>
+          <option value="没" ${item.status === '没' ? 'selected' : ''}>没</option>
+        </select>
+      </td>
+      <td>
         <button class="primary-btn save-contact-btn" data-id="${id}">保存</button>
         <button class="secondary-btn cancel-edit-btn" data-id="${id}">キャンセル</button>
       </td>
@@ -453,6 +485,7 @@ contactsTbody?.addEventListener("click", (e) => {
       email: tr.querySelector(".edit-email").value.trim(),
       tel: tr.querySelector(".edit-tel").value.trim(),
       memo: tr.querySelector(".edit-memo").value.trim(),
+      status: tr.querySelector(".edit-status").value.trim(),
     };
     const index = contactsData.findIndex(item => item.id === id);
     if (index !== -1) {
@@ -554,7 +587,7 @@ mikomiImportFile?.addEventListener("change", (e)=> e.target.files?.length && imp
 botsuImportFile ?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "botsu"));
 
 const exportContactsCsv = () => {
-  const headers = ["id", "company", "name", "email", "tel", "memo"];
+  const headers = ["id", "company", "name", "email", "tel", "memo", "status"];
   let csv = headers.join(",") + "\n";
   contactsData.forEach(it => {
     csv += [
@@ -563,7 +596,8 @@ const exportContactsCsv = () => {
       escapeCsv(it.name),
       escapeCsv(it.email),
       escapeCsv(it.tel),
-      escapeCsv(it.memo)
+      escapeCsv(it.memo),
+      escapeCsv(it.status)
     ].join(",") + "\n";
   });
   downloadCsv(csv, "連絡先リスト.csv");
@@ -576,25 +610,42 @@ const importContactsCsv = (file) => {
     let text = String(reader.result);
     if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
     const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (!lines.length) return;
-    const header = lines[0].split(",").map(h => h.trim().replace(/^\uFEFF/, ""));
-    const hasId = header.includes("id");
-    const dataLines = (header.length >= 5) ? lines.slice(1) : lines;
+    if (lines.length < 2) {
+      toast("CSVファイルにヘッダーとデータ行が必要です。");
+      return;
+    }
+
+    const header = lines[0].split(",").map(h => h.trim().replace(/^\uFEFF/, "").toLowerCase());
+    const requiredHeaders = ["company"];
+    if (!requiredHeaders.every(h => header.includes(h))) {
+      toast(`CSVには少なくとも ${requiredHeaders.join(", ")} のヘッダーが必要です。`);
+      return;
+    }
+
+    const dataLines = lines.slice(1);
     const imported = dataLines.map(line => {
       const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, "").replace(/""/g, '"'));
-      let id, company, name, email, tel, memo;
-      if (hasId) {
-        [id, company, name, email, tel, memo] = cols;
-      } else {
-        [company, name, email, tel, memo] = cols;
-        id = uuid();
-      }
-      return { id, company, name, email, tel, memo };
+      const row = {};
+      header.forEach((h, i) => {
+        row[h] = cols[i] || "";
+      });
+
+      return {
+        id: row.id || uuid(),
+        company: row.company || "",
+        name: row.name || "",
+        email: row.email || "",
+        tel: row.tel || "",
+        memo: row.memo || "",
+        status: row.status || "",
+      };
     });
-    if (confirm("現在の連絡先を上書きしてインポートしますか？")) {
+
+    if (confirm(`現在の連絡先を上書きして ${imported.length} 件のデータをインポートしますか？`)) {
       contactsData = imported;
       saveLocal();
       renderContacts();
+      toast(`${imported.length} 件の連絡先をインポートしました。`, "ok");
     }
   };
   reader.readAsText(file);
@@ -643,7 +694,7 @@ const init = async () => {
   kigyouTA && (kigyouTA.value = kigyouWords.join("\n"));
   mikomiTA && (mikomiTA.value = mikomiWords.join("\n"));
   botsuTA  && (botsuTA.value  = botsuWords.join("\n"));
-  refreshSets(); loadMemo(); applyQuery(); renderAll();
+  refreshSets(); loadMemo(); applyQuery(); refreshCompanyStatusMap(); renderAll();
 
   try {
     const [lists, hist] = await Promise.all([ apiGet({ action: "lists" }), apiGet({ action: "history" }) ]);
