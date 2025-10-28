@@ -73,19 +73,10 @@ const apiPost = async (body) => {
 };
 
 /* ---- ステート ---------------------------------------------------- */
-let kigyouWords = JSON.parse(localStorage.getItem("kigyouList")) || [];
-let mikomiWords = JSON.parse(localStorage.getItem("mikomiList")) || [];
-let botsuWords  = JSON.parse(localStorage.getItem("botsuList"))  || [];
 let historyData = JSON.parse(localStorage.getItem("historyData")) || [];
 let contactsData = JSON.parse(localStorage.getItem("contactsData")) || [];
-let kigyouSet = new Set(kigyouWords.map(norm));
-let mikomiSet = new Set(mikomiWords.map(norm));
-let botsuSet  = new Set(botsuWords.map(norm));
-const refreshSets = () => { kigyouSet = new Set(kigyouWords.map(norm)); mikomiSet = new Set(mikomiWords.map(norm)); botsuSet  = new Set(botsuWords.map(norm)); };
+
 const saveLocal = () => {
-  localStorage.setItem("kigyouList", JSON.stringify(kigyouWords));
-  localStorage.setItem("mikomiList", JSON.stringify(mikomiWords));
-  localStorage.setItem("botsuList",  JSON.stringify(botsuWords));
   localStorage.setItem("historyData", JSON.stringify(historyData));
   localStorage.setItem("contactsData", JSON.stringify(contactsData));
   refreshCompanyStatusMap();
@@ -117,26 +108,6 @@ const clearFilters2  = $("#clear-filters-2");
 const searchBox2     = $("#search-box-2");
 const collapseAllBtn = $("#collapse-all");
 const tbodyFull      = $("#history-table-body-2");
-
-const kigyouTA = $("#kigyou-list");
-const mikomiTA = $("#mikomi-list");
-const botsuTA  = $("#botsu-list");
-const kigyouImportBtn = $("#kigyou-import-btn");
-const kigyouExportBtn = $("#kigyou-export-btn");
-const mikomiImportBtn = $("#mikomi-import-btn");
-const mikomiExportBtn = $("#mikomi-export-btn");
-const botsuImportBtn  = $("#botsu-import-btn");
-const botsuExportBtn  = $("#botsu-export-btn");
-const kigyouImportFile= $("#kigyou-import-file");
-const mikomiImportFile= $("#mikomi-import-file");
-const botsuImportFile = $("#botsu-import-file");
-
-const kigyouSaveBtn  = $("#kigyou-save-btn");
-const kigyouReloadBtn= $("#kigyou-reload-btn");
-const mikomiSaveBtn  = $("#mikomi-save-btn");
-const mikomiReloadBtn= $("#mikomi-reload-btn");
-const botsuSaveBtn   = $("#botsu-save-btn");
-const botsuReloadBtn = $("#botsu-reload-btn");
 
 const contactsForm = $("#contacts-form");
 const contactCompanyEl = $("#contact-company");
@@ -249,15 +220,9 @@ const getStatusClass = (company) => {
   const companyNorm = norm(company);
   const status = companyStatusMap.get(companyNorm);
 
-  // 連絡先タブのステータスを最優先で適用
   if (status === 'ユーザー') return 'status-kigyou';
   if (status === '見込') return 'status-mikomi';
   if (status === '没') return 'status-botsu';
-
-  // 連絡先にステータスがない場合、古いリストをフォールバックとして参照
-  if (botsuSet.has(companyNorm))  return "status-botsu";
-  if (kigyouSet.has(companyNorm)) return "status-kigyou";
-  if (mikomiSet.has(companyNorm)) return "status-mikomi";
 
   return "";
 };
@@ -511,6 +476,7 @@ contactsTbody?.addEventListener("click", (e) => {
     if (index !== -1) {
       contactsData[index] = updatedItem;
       saveLocal();
+      pushStatusListsToGAS(); // ステータス変更をGASに送信
     }
     renderContacts();
   } else if (target.classList.contains("cancel-edit-btn")) {
@@ -536,7 +502,8 @@ approachForm?.addEventListener("submit", async (e) => {
   renderAll(); // メインの履歴テーブルも更新
 
   // モーダル内の履歴を再描画し、フォームをリセット
-  openApproachModal(companyName);
+  const contact = contactsData.find(c => norm(c.company) === norm(companyName));
+  if (contact) openApproachModal(contact);
   approachMediaSelectEl.value = "";
   approachNoteEl.value = "";
   approachNoteEl.focus();
@@ -552,7 +519,19 @@ approachForm?.addEventListener("submit", async (e) => {
 
 /* ---- CSV（履歴/各リスト） -------------------------------------- */
 const escapeCsv = (v) => { const s = String(v ?? ""); return (/[",\n]/.test(s)) ? `"${s.replace(/"/g, '""')}"` : s; };
-const downloadCsv = (text, filename) => { const blob=new Blob([text],{type:"text/csv;charset=utf-8;"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); };
+const downloadCsv = (text, filename) => {
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const blob = new Blob([bom, text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.style.display = "none";
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
 
 const exportHistoryCsv = () => {
   const headers = ["id","createdAt","company","media","note"];
@@ -582,29 +561,6 @@ const importHistoryCsv = (file) => {
 };
 historyImportBtn?.addEventListener("click", () => historyImportFile.click());
 historyImportFile?.addEventListener("change", (e)=>{ if (e.target.files?.length) importHistoryCsv(e.target.files[0]); });
-
-const exportListCsv = (arr, title) => downloadCsv(arr.join("\n"), `${title}.csv`);
-const importListCsv = (file, target) => {
-  const reader = new FileReader();
-  reader.onload = () => {
-    let text = String(reader.result); if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-    const arr = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-    if (target === "kigyou") { kigyouWords = arr; kigyouTA.value = arr.join("\n"); }
-    if (target === "mikomi") { mikomiWords = arr; mikomiTA.value = arr.join("\n"); }
-    if (target === "botsu")  { botsuWords  = arr; botsuTA.value  = arr.join("\n"); }
-    saveLocal(); refreshSets(); renderAll(); pushListsDebounced();
-  };
-  reader.readAsText(file);
-};
-kigyouExportBtn?.addEventListener("click", () => exportListCsv(kigyouWords, "企業リスト"));
-mikomiExportBtn?.addEventListener("click", () => exportListCsv(mikomiWords, "見込みリスト"));
-botsuExportBtn ?.addEventListener("click", () => exportListCsv(botsuWords,  "没リスト"));
-kigyouImportBtn?.addEventListener("click", () => kigyouImportFile.click());
-mikomiImportBtn?.addEventListener("click", () => mikomiImportFile.click());
-botsuImportBtn ?.addEventListener("click", () => botsuImportFile.click());
-kigyouImportFile?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "kigyou"));
-mikomiImportFile?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "mikomi"));
-botsuImportFile ?.addEventListener("change", (e)=> e.target.files?.length && importListCsv(e.target.files[0], "botsu"));
 
 const exportContactsCsv = () => {
   const headers = ["id", "company", "name", "email", "tel", "memo", "status"];
@@ -673,32 +629,20 @@ const importContactsCsv = (file) => {
 contactsImportBtn?.addEventListener("click", () => contactsImportFile.click());
 contactsImportFile?.addEventListener("change", (e) => { if (e.target.files?.length) importContactsCsv(e.target.files[0]); });
 
-/* ---- リスト 双方向API ------------------------------------------ */
-const pushListsToGAS = async () => {
-  try{
-    await apiPost({ action:"saveLists", kigyou:kigyouWords, mikomi:mikomiWords, botsu:botsuWords });
-    toast("リストをGASへ保存しました。", "ok");
-  }catch(err){ toast("リスト保存に失敗：GAS公開設定/URLを確認。", "error"); console.error(err); }
-};
-const pullListsFromGAS = async () => {
-  try{
-    const lists = await apiGet({ action:"lists" });
-    kigyouWords = lists.kigyou || []; mikomiWords = lists.mikomi || []; botsuWords = lists.botsu || [];
-    kigyouTA && (kigyouTA.value = kigyouWords.join("\n"));
-    mikomiTA && (mikomiTA.value = mikomiWords.join("\n"));
-    botsuTA  && (botsuTA.value  = botsuWords.join("\n"));
-    refreshSets(); saveLocal(); renderAll();
-    toast("GASからリストを再読み込みしました。", "ok");
-  }catch(err){ toast("リストの再読み込みに失敗。", "error"); console.error(err); }
-};
-const pushListsDebounced = debounce(pushListsToGAS, 1200);
+/* ---- 連絡先ステータス → GASリスト同期 -------------------- */
+const pushStatusListsToGAS = async () => {
+  const kigyou = contactsData.filter(c => c.status === 'ユーザー').map(c => c.company);
+  const mikomi = contactsData.filter(c => c.status === '見込').map(c => c.company);
+  const botsu  = contactsData.filter(c => c.status === '没').map(c => c.company);
 
-kigyouSaveBtn ?.addEventListener("click", pushListsToGAS);
-mikomiSaveBtn ?.addEventListener("click", pushListsToGAS);
-botsuSaveBtn  ?.addEventListener("click", pushListsToGAS);
-kigyouReloadBtn?.addEventListener("click", pullListsFromGAS);
-mikomiReloadBtn?.addEventListener("click", pullListsFromGAS);
-botsuReloadBtn ?.addEventListener("click", pullListsFromGAS);
+  try {
+    await apiPost({ action: "saveLists", kigyou, mikomi, botsu });
+    toast("ステータスリストをGASへ保存しました。", "ok");
+  } catch(err) {
+    toast("ステータスリストのGAS保存に失敗しました。", "error");
+    console.error(err);
+  }
+};
 
 /* ---- URLクエリ（軽量同期） ------------------------------------- */
 const applyQuery = () => { const sp=new URLSearchParams(location.search); monthFilter2 && sp.has("m") && (monthFilter2.value=sp.get("m")); sortOrder2 && sp.has("sort") && (sortOrder2.value=sp.get("sort")); searchBox2 && sp.has("q") && (searchBox2.value=sp.get("q")); };
@@ -711,20 +655,13 @@ const pushQuery = () => { const sp=new URLSearchParams(location.search);
 
 /* ---- 初期化 ----------------------------------------------------- */
 const init = async () => {
-  kigyouTA && (kigyouTA.value = kigyouWords.join("\n"));
-  mikomiTA && (mikomiTA.value = mikomiWords.join("\n"));
-  botsuTA  && (botsuTA.value  = botsuWords.join("\n"));
-  refreshSets(); loadMemo(); applyQuery(); refreshCompanyStatusMap(); renderAll();
+  loadMemo();
+  applyQuery();
+  refreshCompanyStatusMap();
+  renderAll();
 
   try {
-    const [lists, hist] = await Promise.all([ apiGet({ action: "lists" }), apiGet({ action: "history" }) ]);
-    if (lists) {
-      kigyouWords = lists.kigyou || []; mikomiWords = lists.mikomi || []; botsuWords = lists.botsu || [];
-      kigyouTA && (kigyouTA.value = kigyouWords.join("\n"));
-      mikomiTA && (mikomiTA.value = mikomiWords.join("\n"));
-      botsuTA  && (botsuTA.value  = botsuWords.join("\n"));
-      refreshSets();
-    }
+    const hist = await apiGet({ action: "history" });
     if (Array.isArray(hist?.history)) {
       historyData = hist.history.map(it => ({ id:it.id || "", createdAt: it.createdAt || it.date || "", company:it.company||"", media:it.media||"", note:it.note||"" }));
       const need = [];
@@ -734,14 +671,13 @@ const init = async () => {
         catch { for (const item of need) { try { await apiPost({ action:"upsertHistory", item }); } catch(_){} } }
       }
     }
-    saveLocal(); renderAll();
-  } catch (err) { console.warn("GAS読み込み失敗。ローカル使用:", err); toast("GAS読み込みに失敗（ローカル表示中）。", "error"); }
+    saveLocal();
+    renderAll();
+  } catch (err) {
+    console.warn("GAS履歴の読み込みに失敗。ローカルデータを使用します:", err);
+    toast("GAS履歴の読み込みに失敗しました。", "error");
+  }
 };
-
-/* ---- リスト編集：ローカル反映＋自動GAS保存 ---------------------- */
-kigyouTA?.addEventListener("input", () => { kigyouWords = kigyouTA.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); saveLocal(); refreshSets(); renderAll(); pushListsDebounced(); });
-mikomiTA?.addEventListener("input", () => { mikomiWords = mikomiTA.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); saveLocal(); refreshSets(); renderAll(); pushListsDebounced(); });
-botsuTA ?.addEventListener("input", () => { botsuWords  = botsuTA.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); saveLocal(); refreshSets(); renderAll(); pushListsDebounced(); });
 
 /* ---- DOMReady --------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {

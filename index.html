@@ -14,9 +14,6 @@
     <nav class="tab-nav">
       <button class="tab-btn" data-target="#page-history">履歴</button>
       <button class="tab-btn active" data-target="#page-history-list">履歴一覧</button>
-      <button class="tab-btn" data-target="#page-kigyou">企業</button>
-      <button class="tab-btn" data-target="#page-mikomi">見込</button>
-      <button class="tab-btn" data-target="#page-botsu">没</button>
       <button class="tab-btn" data-target="#page-contacts">連絡先</button>
 
       <!-- 履歴一覧の時だけ表示（script.js が制御） -->
@@ -145,48 +142,6 @@
               <tbody id="history-table-body-2"></tbody>
             </table>
           </div>
-        </div>
-      </section>
-
-      <!-- ③ 企業リスト -->
-      <section id="page-kigyou" class="page-content">
-        <h2>企業リスト</h2>
-        <p>ここに登録した企業名は、履歴で <span class="color-chip kigyou">この色</span> で表示されます。</p>
-        <textarea id="kigyou-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
-        <div class="data-io-buttons">
-          <input type="file" id="kigyou-import-file" accept=".csv" style="display:none;"/>
-          <button id="kigyou-import-btn" class="secondary-btn">インポート</button>
-          <button id="kigyou-export-btn" class="secondary-btn">エクスポート</button>
-          <button id="kigyou-save-btn" class="primary-btn">保存（GASへ）</button>
-          <button id="kigyou-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
-        </div>
-      </section>
-
-      <!-- ④ 見込みリスト -->
-      <section id="page-mikomi" class="page-content">
-        <h2>見込みリスト</h2>
-        <p>ここに登録した企業名は、履歴で <span class="color-chip mikomi">この色</span> で表示されます。</p>
-        <textarea id="mikomi-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
-        <div class="data-io-buttons">
-          <input type="file" id="mikomi-import-file" accept=".csv" style="display:none;"/>
-          <button id="mikomi-import-btn" class="secondary-btn">インポート</button>
-          <button id="mikomi-export-btn" class="secondary-btn">エクスポート</button>
-          <button id="mikomi-save-btn" class="primary-btn">保存（GASへ）</button>
-          <button id="mikomi-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
-        </div>
-      </section>
-
-      <!-- ⑤ 没リスト -->
-      <section id="page-botsu" class="page-content">
-        <h2>没リスト</h2>
-        <p>ここに登録した企業名は、履歴で <span class="color-chip botsu">この色</span> で表示されます。（最優先）</p>
-        <textarea id="botsu-list" rows="16" placeholder="企業名を一行ずつ入力"></textarea>
-        <div class="data-io-buttons">
-          <input type="file" id="botsu-import-file" accept=".csv" style="display:none;"/>
-          <button id="botsu-import-btn" class="secondary-btn">インポート</button>
-          <button id="botsu-export-btn" class="secondary-btn">エクスポート</button>
-          <button id="botsu-save-btn" class="primary-btn">保存（GASへ）</button>
-          <button id="botsu-reload-btn" class="secondary-btn">再読み込み（GAS→）</button>
         </div>
       </section>
 
