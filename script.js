@@ -120,6 +120,9 @@ const contactsTbody = $("#contacts-table-body");
 const contactsImportBtn = $("#contacts-import-btn");
 const contactsExportBtn = $("#contacts-export-btn");
 const contactsImportFile = $("#contacts-import-file");
+const filterUserBtn = $("#filter-user-btn");
+
+let isUserFilterActive = false;
 
 const modal           = $("#detail-modal");
 const modalCloseBtn   = modal?.querySelector(".close-btn");
@@ -298,7 +301,13 @@ const renderContacts = () => {
   if (!contactsTbody) return;
   const q = (contactsSearchBox?.value || "").toLowerCase();
   contactsTbody.innerHTML = "";
-  contactsData
+  let filteredContacts = contactsData;
+
+  if (isUserFilterActive) {
+    filteredContacts = contactsData.filter(it => it.status === 'ユーザー');
+  }
+
+  filteredContacts
     .filter(it => it.company.toLowerCase().includes(q) || it.name.toLowerCase().includes(q) || it.email.toLowerCase().includes(q) || it.tel.toLowerCase().includes(q) || it.memo.toLowerCase().includes(q))
     .forEach(item => {
       const tr = document.createElement("tr");
@@ -329,6 +338,20 @@ clearFilters2?.addEventListener("click", () => {
   renderFull();
 });
 contactsSearchBox?.addEventListener("input", renderContacts);
+
+filterUserBtn?.addEventListener("click", () => {
+  isUserFilterActive = !isUserFilterActive;
+  renderContacts();
+  if (isUserFilterActive) {
+    filterUserBtn.textContent = "全件表示";
+    filterUserBtn.classList.add("primary-btn");
+    filterUserBtn.classList.remove("secondary-btn");
+  } else {
+    filterUserBtn.textContent = "ユーザー表示";
+    filterUserBtn.classList.add("secondary-btn");
+    filterUserBtn.classList.remove("primary-btn");
+  }
+});
 
 /* ---- 折りたたみ ------------------------------------------------- */
 const setCollapsedAll = (collapse) => { $$(".note-cell", $("#page-history-list")).forEach(td => collapse ? td.dataset.collapsed="1" : delete td.dataset.collapsed); };
