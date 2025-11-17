@@ -120,9 +120,12 @@ const contactsTbody = $("#contacts-table-body");
 const contactsImportBtn = $("#contacts-import-btn");
 const contactsExportBtn = $("#contacts-export-btn");
 const contactsImportFile = $("#contacts-import-file");
+const filterAllBtn = $("#filter-all-btn");
 const filterUserBtn = $("#filter-user-btn");
+const filterProspectBtn = $("#filter-prospect-btn");
+const filterNoneBtn = $("#filter-none-btn");
 
-let isUserFilterActive = false;
+let currentContactFilter = "all";
 
 const modal           = $("#detail-modal");
 const modalCloseBtn   = modal?.querySelector(".close-btn");
@@ -303,8 +306,12 @@ const renderContacts = () => {
   contactsTbody.innerHTML = "";
   let filteredContacts = contactsData;
 
-  if (isUserFilterActive) {
+  if (currentContactFilter === "user") {
     filteredContacts = contactsData.filter(it => it.status === 'ユーザー');
+  } else if (currentContactFilter === "prospect") {
+    filteredContacts = contactsData.filter(it => it.status === '見込');
+  } else if (currentContactFilter === "none") {
+    filteredContacts = contactsData.filter(it => !it.status);
   }
 
   filteredContacts
@@ -339,19 +346,35 @@ clearFilters2?.addEventListener("click", () => {
 });
 contactsSearchBox?.addEventListener("input", renderContacts);
 
-filterUserBtn?.addEventListener("click", () => {
-  isUserFilterActive = !isUserFilterActive;
+const updateContactFilter = (filter) => {
+  currentContactFilter = filter;
   renderContacts();
-  if (isUserFilterActive) {
-    filterUserBtn.textContent = "全件表示";
+
+  const buttons = [filterAllBtn, filterUserBtn, filterProspectBtn, filterNoneBtn];
+  buttons.forEach(btn => {
+    btn.classList.remove("primary-btn");
+    btn.classList.add("secondary-btn");
+  });
+
+  if (filter === "all") {
+    filterAllBtn.classList.add("primary-btn");
+    filterAllBtn.classList.remove("secondary-btn");
+  } else if (filter === "user") {
     filterUserBtn.classList.add("primary-btn");
     filterUserBtn.classList.remove("secondary-btn");
-  } else {
-    filterUserBtn.textContent = "ユーザー表示";
-    filterUserBtn.classList.add("secondary-btn");
-    filterUserBtn.classList.remove("primary-btn");
+  } else if (filter === "prospect") {
+    filterProspectBtn.classList.add("primary-btn");
+    filterProspectBtn.classList.remove("secondary-btn");
+  } else if (filter === "none") {
+    filterNoneBtn.classList.add("primary-btn");
+    filterNoneBtn.classList.remove("secondary-btn");
   }
-});
+};
+
+filterAllBtn?.addEventListener("click", () => updateContactFilter("all"));
+filterUserBtn?.addEventListener("click", () => updateContactFilter("user"));
+filterProspectBtn?.addEventListener("click", () => updateContactFilter("prospect"));
+filterNoneBtn?.addEventListener("click", () => updateContactFilter("none"));
 
 /* ---- 折りたたみ ------------------------------------------------- */
 const setCollapsedAll = (collapse) => { $$(".note-cell", $("#page-history-list")).forEach(td => collapse ? td.dataset.collapsed="1" : delete td.dataset.collapsed); };
