@@ -1,250 +1,336 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>アプローチシステム 2.0</title>
+  <title>Approach System 3.0</title>
+  <meta name="description" content="アプローチ管理システム - 企業連絡・履歴・分析ダッシュボード" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
-    rel="stylesheet">
-  <!-- Chart.js (CDN) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Vercel Speed Insights -->
-  <script defer src="/_vercel/insights/script.js"></script>
 </head>
-
 <body>
-  <div class="app-container">
-    <!-- サイドバー -->
-    <nav class="sidebar">
-      <div class="sidebar-header">
-        <h2>Approach<br>System</h2>
-      </div>
-      <ul class="nav-links">
-        <li><button class="nav-btn active" data-target="#page-dashboard"><span class="icon">📊</span> ダッシュボード</button>
-        </li>
-        <li><button class="nav-btn" data-target="#page-kanban"><span class="icon">📋</span> カンバンボード</button></li>
-        <li><button class="nav-btn" data-target="#page-history-list"><span class="icon">📑</span> 履歴一覧</button></li>
-        <li><button class="nav-btn" data-target="#page-contacts"><span class="icon">👥</span> 連絡先リスト</button></li>
-        <li><button class="nav-btn" data-target="#page-history"><span class="icon">✏️</span> 履歴入力</button></li>
-      </ul>
-      <div class="sidebar-footer">
-        <a href="https://keep.google.com/u/0/" target="_blank" class="footer-link">Google Keep</a>
-        <a href="https://calendar.google.com/calendar/u/0/r/week" target="_blank" class="footer-link">Calendar</a>
-      </div>
-    </nav>
 
-    <!-- メインコンテンツ -->
-    <main class="main-content">
+<div class="app-shell">
+
+  <!-- ========== SIDEBAR ========== -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">A</div>
+      <div class="logo-text">
+        Approach
+        <span>SYSTEM v3.0</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">メイン</div>
+      <button class="nav-item active" id="nav-dashboard" data-page="page-dashboard">
+        <span class="nav-icon">⬛</span> ダッシュボード
+      </button>
+      <button class="nav-item" id="nav-contacts" data-page="page-contacts">
+        <span class="nav-icon">◉</span> 連絡先
+        <span class="nav-badge" id="nav-badge-contacts">0</span>
+      </button>
+      <button class="nav-item" id="nav-kanban" data-page="page-kanban">
+        <span class="nav-icon">▦</span> カンバン
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">記録</div>
+      <button class="nav-item" id="nav-history" data-page="page-history">
+        <span class="nav-icon">✎</span> 履歴入力
+      </button>
+      <button class="nav-item" id="nav-history-list" data-page="page-history-list">
+        <span class="nav-icon">☰</span> 履歴一覧
+        <span class="nav-badge" id="nav-badge-history">0</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <a href="https://keep.google.com/u/0/" target="_blank" rel="noopener">
+        📒 Google Keep
+      </a>
+      <a href="https://calendar.google.com/calendar/u/0/r/week" target="_blank" rel="noopener">
+        📅 カレンダー
+      </a>
+    </div>
+  </nav>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar" id="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">ダッシュボード</div>
+        <div class="topbar-subtitle" id="topbar-sub">現在の状況サマリー</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="sync-status">
+          <div class="sync-dot" id="sync-dot"></div>
+          <span id="sync-label">同期中…</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-sync">🔄 同期</button>
+      </div>
+    </div>
+
+    <!-- Pages -->
+    <div class="pages-wrapper">
 
       <!-- ① ダッシュボード -->
       <section id="page-dashboard" class="page-section active">
-        <header class="section-header">
-          <h1>ダッシュボード</h1>
-          <p class="subtitle">現在のアプローチ状況の概要</p>
-        </header>
 
-        <div class="dashboard-grid">
-          <!-- スタッツカード -->
+        <!-- Stats Row -->
+        <div class="stats-row">
           <div class="stat-card">
-            <h3>総連絡先数</h3>
-            <p class="stat-value" id="stat-total-contacts">0</p>
+            <div class="stat-label">📞 今日のコール</div>
+            <div class="stat-value" id="stat-call-today">0</div>
+            <div class="stat-sub">本日の履歴登録数</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-label">📅 今月のコール</div>
+            <div class="stat-value" id="stat-call-month">0</div>
+            <div class="stat-sub">今月累計</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-label">👥 連絡先総数</div>
+            <div class="stat-value" id="stat-total-contacts">0</div>
+            <div class="stat-sub">登録企業数</div>
           </div>
           <div class="stat-card">
-            <h3>今月のアプローチ</h3>
-            <p class="stat-value" id="stat-monthly-approaches">0</p>
+            <div class="stat-label">⭐ ユーザー</div>
+            <div class="stat-value" id="stat-users">0</div>
+            <div class="stat-sub">ユーザー獲得数</div>
           </div>
-          <div class="stat-card">
-            <h3>ユーザー獲得数</h3>
-            <p class="stat-value" id="stat-user-count">0</p>
-          </div>
+        </div>
 
-          <!-- チャート -->
-          <div class="chart-card">
-            <h3>ステータス内訳</h3>
-            <div class="chart-wrapper">
-              <canvas id="statusChart"></canvas>
+        <div class="dashboard-body">
+          <!-- Left: Chart + Recent -->
+          <div class="chart-area">
+            <div class="chart-card panel">
+              <div class="panel-header">
+                <div class="panel-title">ステータス分布</div>
+              </div>
+              <div class="chart-wrapper" style="padding:12px 0 4px;">
+                <canvas id="statusChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">最近のアプローチ</div>
+                <div class="panel-meta">(直近10件)</div>
+              </div>
+              <ul class="activity-list panel-body" id="recent-activity-list" style="padding:0 18px;"></ul>
             </div>
           </div>
 
-          <!-- 最近の活動 -->
-          <div class="recent-activity-card">
-            <h3>最近のアプローチ</h3>
-            <ul id="recent-activity-list" class="activity-list">
-              <!-- JSで生成 -->
-            </ul>
+          <!-- Right: Memo + Calls -->
+          <div class="flex-col gap-12" style="gap:16px;">
+            <!-- Call stats detail -->
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">📞 コール集計</div>
+              </div>
+              <div class="panel-body">
+                <div class="call-grid">
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">TODAY</div>
+                    <div class="mini-stat-value" id="mini-call-today">0</div>
+                  </div>
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">THIS MONTH</div>
+                    <div class="mini-stat-value" id="mini-call-month">0</div>
+                  </div>
+                </div>
+                <div class="call-grid">
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">LAST MONTH</div>
+                    <div class="mini-stat-value" id="mini-call-last">0</div>
+                  </div>
+                  <div class="mini-stat">
+                    <div class="mini-stat-label">TOTAL</div>
+                    <div class="mini-stat-value" id="mini-call-total">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Memo -->
+            <div class="panel" style="flex:1;">
+              <div class="panel-header">
+                <div class="panel-title">📝 クイックメモ</div>
+                <div class="panel-actions">
+                  <a href="https://keep.google.com/u/0/" target="_blank" rel="noopener" class="keep-link">
+                    🟡 Keep で開く
+                  </a>
+                </div>
+              </div>
+              <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+                <textarea id="quick-memo" class="memo-textarea" placeholder="メモ、TODO、気になったこと..."></textarea>
+                <div class="memo-meta">
+                  <span class="memo-saved-time" id="memo-saved-time"></span>
+                  <div class="flex gap-8">
+                    <button class="btn btn-ghost btn-sm" id="quick-memo-clear">クリア</button>
+                    <button class="btn btn-primary btn-sm" id="quick-memo-save">保存</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ② カンバンボード -->
-      <section id="page-kanban" class="page-section">
-        <header class="section-header">
-          <h1>カンバンボード</h1>
-          <div class="header-actions">
-            <button id="kanban-refresh-btn" class="secondary-btn">更新</button>
-          </div>
-        </header>
+      <!-- ② 連絡先リスト -->
+      <section id="page-contacts" class="page-section">
+        <div class="contacts-layout">
 
+          <!-- Left: form -->
+          <div class="panel contact-form-panel">
+            <div class="panel-header">
+              <div class="panel-title" id="contact-form-title">新規登録</div>
+            </div>
+            <div class="panel-body" style="display:flex; flex-direction:column; gap:12px;">
+              <input type="hidden" id="contact-edit-id" />
+              <div class="form-group">
+                <label class="form-label">企業名 *</label>
+                <input type="text" id="contact-company" placeholder="株式会社〇〇" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">ステータス</label>
+                <select id="contact-status">
+                  <option value="">未分類</option>
+                  <option value="見込">見込</option>
+                  <option value="ユーザー">ユーザー</option>
+                  <option value="没">没</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">担当者名</label>
+                <input type="text" id="contact-name" placeholder="山田 太郎" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">電話番号</label>
+                  <input type="tel" id="contact-tel" placeholder="090-0000-0000" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" id="contact-email" placeholder="info@example.com" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">住所</label>
+                <input type="text" id="contact-address" placeholder="愛媛県松山市…" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">備考</label>
+                <textarea id="contact-memo" placeholder="自由メモ..." rows="3"></textarea>
+              </div>
+              <div class="flex gap-8" style="margin-top:4px;">
+                <button class="btn btn-secondary btn-sm" id="contact-reset-btn" style="flex:1;">リセット</button>
+                <button class="btn btn-primary" id="contact-submit-btn" style="flex:2;">登録する</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: list -->
+          <div class="panel contact-list-panel">
+            <div class="toolbar">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="contacts-search-box" placeholder="企業名・担当者で検索..." />
+              </div>
+              <div class="filter-tabs" id="contact-filter-tabs">
+                <button class="filter-tab active" data-filter="all" id="filter-all-btn">全て</button>
+                <button class="filter-tab" data-filter="user" id="filter-user-btn">ユーザー</button>
+                <button class="filter-tab" data-filter="prospect" id="filter-prospect-btn">見込</button>
+                <button class="filter-tab" data-filter="none" id="filter-none-btn">未分類</button>
+                <button class="filter-tab" data-filter="botsu" id="filter-botsu-btn">没</button>
+              </div>
+              <div style="margin-left:auto; display:flex; gap:6px;">
+                <input type="file" id="contacts-import-file" accept=".csv" hidden />
+                <button class="btn btn-ghost btn-sm" id="contacts-import-btn" title="CSV インポート">📥 IN</button>
+                <button class="btn btn-ghost btn-sm" id="contacts-export-btn" title="CSV エクスポート">📤 OUT</button>
+              </div>
+            </div>
+            <div class="table-wrap scrollbox">
+              <table id="contacts-table">
+                <thead>
+                  <tr>
+                    <th>企業名</th>
+                    <th>担当者</th>
+                    <th>電話番号</th>
+                    <th>ステータス</th>
+                    <th>備考</th>
+                    <th width="100">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="contacts-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ③ カンバン -->
+      <section id="page-kanban" class="page-section">
         <div class="kanban-board">
           <!-- 未分類 -->
           <div class="kanban-column" data-status="">
-            <div class="column-header status-none">
-              <h3>未分類 / 新規</h3>
-              <span class="count-badge" id="count-none">0</span>
+            <div class="kanban-col-header col-none">
+              <span class="col-dot"></span> 未分類 / 新規
+              <span class="col-count" id="count-none">0</span>
             </div>
             <div class="kanban-items" id="kanban-none"></div>
           </div>
-
           <!-- 見込 -->
           <div class="kanban-column" data-status="見込">
-            <div class="column-header status-mikomi">
-              <h3>見込</h3>
-              <span class="count-badge" id="count-mikomi">0</span>
+            <div class="kanban-col-header col-mikomi">
+              <span class="col-dot"></span> 見込
+              <span class="col-count" id="count-mikomi">0</span>
             </div>
             <div class="kanban-items" id="kanban-mikomi"></div>
           </div>
-
           <!-- ユーザー -->
           <div class="kanban-column" data-status="ユーザー">
-            <div class="column-header status-user">
-              <h3>ユーザー</h3>
-              <span class="count-badge" id="count-user">0</span>
+            <div class="kanban-col-header col-user">
+              <span class="col-dot"></span> ユーザー
+              <span class="col-count" id="count-user">0</span>
             </div>
             <div class="kanban-items" id="kanban-user"></div>
           </div>
-
           <!-- 没 -->
           <div class="kanban-column" data-status="没">
-            <div class="column-header status-botsu">
-              <h3>没 / 保留</h3>
-              <span class="count-badge" id="count-botsu">0</span>
+            <div class="kanban-col-header col-botsu">
+              <span class="col-dot"></span> 没 / 保留
+              <span class="col-count" id="count-botsu">0</span>
             </div>
             <div class="kanban-items" id="kanban-botsu"></div>
           </div>
         </div>
       </section>
 
-      <!-- ③ 履歴一覧（閲覧用） -->
-      <section id="page-history-list" class="page-section">
-        <header class="section-header">
-          <h1>履歴一覧</h1>
-        </header>
-        <div class="search-container hl-layout">
-          <!-- クイックメモ -->
-          <div class="memo-panel glass-panel">
-            <h2>クイックメモ</h2>
-            <textarea id="quick-memo" placeholder="TODOやアイデアをメモ..."></textarea>
-            <div class="memo-actions">
-              <span id="memo-status" class="memo-status"></span>
-              <div class="memo-actions-right">
-                <button id="quick-memo-save" class="primary-btn small">保存</button>
-                <button id="quick-memo-clear" class="secondary-btn small">クリア</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- フィルタ -->
-          <div class="filter-panel glass-panel">
-            <div class="filter-row">
-              <div class="filter-cell">
-                <label>月指定</label>
-                <input type="month" id="month-filter-2" />
-              </div>
-              <div class="filter-cell">
-                <label>並び順</label>
-                <select id="sort-order-2">
-                  <option value="desc">新しい順</option>
-                  <option value="asc">古い順</option>
-                </select>
-              </div>
-              <button id="clear-filters-2" class="secondary-btn">クリア</button>
-            </div>
-            <input type="text" id="search-box-2" placeholder="検索 (企業名, 内容)..." />
-          </div>
-        </div>
-
-        <div class="history-log-wrapper glass-panel">
-          <div class="table-actions">
-            <button id="collapse-all" class="secondary-btn small">展開する</button>
-          </div>
-          <div class="history-log scrollbox">
-            <table id="history-table-2">
-              <thead>
-                <tr>
-                  <th width="140">日時</th>
-                  <th width="180">企業名</th>
-                  <th width="100">媒体</th>
-                  <th>内容</th>
-                </tr>
-              </thead>
-              <tbody id="history-table-body-2"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ④ 連絡先リスト -->
-      <section id="page-contacts" class="page-section">
-        <header class="section-header">
-          <h1>連絡先リスト</h1>
-          <button id="btn-add-contact-modal" class="primary-btn">新規追加</button>
-        </header>
-
-        <div class="glass-panel">
-          <div class="toolbar">
-            <input type="text" id="contacts-search-box" placeholder="検索..." />
-            <div class="filter-buttons">
-              <button id="filter-all-btn" class="filter-chip active">全て</button>
-              <button id="filter-user-btn" class="filter-chip">ユーザー</button>
-              <button id="filter-prospect-btn" class="filter-chip">見込</button>
-              <button id="filter-none-btn" class="filter-chip">未分類</button>
-            </div>
-            <div class="io-buttons">
-              <input type="file" id="contacts-import-file" accept=".csv" hidden />
-              <button id="contacts-import-btn" class="icon-btn" title="インポート">📥</button>
-              <button id="contacts-export-btn" class="icon-btn" title="エクスポート">📤</button>
-            </div>
-          </div>
-
-          <div class="history-log scrollbox">
-            <table id="contacts-table">
-              <thead>
-                <tr>
-                  <th>企業名</th>
-                  <th>担当者</th>
-                  <th>電話番号</th>
-                  <th>ステータス</th>
-                  <th width="180">操作</th>
-                </tr>
-              </thead>
-              <tbody id="contacts-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ⑤ 履歴入力（旧トップ） -->
+      <!-- ④ 履歴入力 -->
       <section id="page-history" class="page-section">
-        <header class="section-header">
-          <h1>履歴入力</h1>
-        </header>
-        <div class="input-layout">
-          <!-- 入力フォーム -->
-          <div class="form-container glass-panel">
-            <h2>新規追加</h2>
-            <form id="history-form" autocomplete="off">
+        <div style="display:grid; grid-template-columns:360px 1fr; gap:20px; height:100%; overflow:hidden;">
+
+          <div class="panel" style="overflow-y:auto;">
+            <div class="panel-header">
+              <div class="panel-title">履歴を記録</div>
+            </div>
+            <div class="panel-body" style="display:flex; flex-direction:column; gap:12px;">
               <div class="form-group">
-                <label>企業名</label>
-                <input type="text" id="company-name" required />
+                <label class="form-label">企業名 *</label>
+                <input type="text" id="company-name" placeholder="企業名を入力" list="company-datalist" required />
+                <datalist id="company-datalist"></datalist>
               </div>
               <div class="form-group">
-                <label>媒体</label>
+                <label class="form-label">媒体 *</label>
                 <select id="media-select" required>
                   <option value="">選択してください</option>
                   <option value="新規">新規</option>
@@ -253,28 +339,32 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>内容</label>
-                <textarea id="history-note" rows="5" required></textarea>
+                <label class="form-label">アプローチ内容 *</label>
+                <textarea id="history-note" rows="6" placeholder="内容を入力..." required></textarea>
               </div>
-              <button type="submit" class="primary-btn full-width">追加する</button>
-            </form>
-            <div class="io-links">
-              <input type="file" id="history-import-file" accept=".csv" hidden />
-              <button id="history-import-btn" class="link-style-btn">CSVインポート</button>
-              <button id="history-export-btn" class="link-style-btn">CSVエクスポート</button>
+              <button class="btn btn-primary" id="history-submit-btn" style="width:100%;">記録する</button>
+              <div style="display:flex; gap:8px; justify-content:center; margin-top:4px;">
+                <input type="file" id="history-import-file" accept=".csv" hidden />
+                <button class="btn btn-ghost btn-sm" id="history-import-btn">CSV IN</button>
+                <button class="btn btn-ghost btn-sm" id="history-export-btn">CSV OUT</button>
+              </div>
             </div>
           </div>
 
-          <!-- 簡易履歴 -->
-          <div class="mini-history glass-panel">
-            <h2>直近の履歴</h2>
-            <input type="text" id="search-box" placeholder="検索..." class="mini-search" />
-            <div class="history-log scrollbox mini">
+          <div class="panel" style="display:flex; flex-direction:column; overflow:hidden;">
+            <div class="toolbar" style="border-top:none;">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-box" placeholder="検索..." />
+              </div>
+            </div>
+            <div class="table-wrap scrollbox">
               <table id="history-table">
                 <thead>
                   <tr>
-                    <th>日時</th>
-                    <th>企業名</th>
+                    <th width="130">日時</th>
+                    <th width="160">企業名</th>
+                    <th width="90">媒体</th>
                     <th>内容</th>
                   </tr>
                 </thead>
@@ -285,141 +375,171 @@
         </div>
       </section>
 
-    </main>
-  </div>
+      <!-- ⑤ 履歴一覧 -->
+      <section id="page-history-list" class="page-section">
+        <div class="hl-layout">
 
-  <!-- モーダル群 -->
+          <!-- Left sidebar: memo + filters -->
+          <div class="hl-sidebar">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">📝 クイックメモ</div>
+                <a href="https://keep.google.com/u/0/" target="_blank" class="keep-link" style="font-size:10px; padding:3px 8px;">🟡 Keep</a>
+              </div>
+              <div class="panel-body" style="display:flex; flex-direction:column; gap:8px;">
+                <textarea id="quick-memo-2" class="memo-textarea" placeholder="メモ..." style="min-height:120px;"></textarea>
+                <div class="flex gap-8" style="justify-content:flex-end;">
+                  <button class="btn btn-ghost btn-sm" id="quick-memo-2-clear">クリア</button>
+                  <button class="btn btn-primary btn-sm" id="quick-memo-2-save">保存</button>
+                </div>
+              </div>
+            </div>
 
-  <!-- 履歴詳細モーダル -->
-  <div id="detail-modal" class="modal" aria-hidden="true">
-    <div class="modal-content glass-modal">
-      <button class="close-btn">&times;</button>
-      <h2>履歴詳細</h2>
-      <form id="detail-form">
-        <input type="hidden" id="detail-id" />
-        <div class="form-row">
-          <div class="form-group">
-            <label>日時</label>
-            <input type="text" id="detail-created" readonly class="readonly-input" />
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">フィルター</div>
+                <button class="btn btn-ghost btn-xs" id="clear-filters-2">クリア</button>
+              </div>
+              <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+                <div class="form-group">
+                  <label class="form-label">月で絞り込み</label>
+                  <input type="month" id="month-filter-2" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">並び順</label>
+                  <select id="sort-order-2">
+                    <option value="desc">新しい順</option>
+                    <option value="asc">古い順</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">キーワード検索</label>
+                  <input type="text" id="search-box-2" placeholder="企業名、内容..." />
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>媒体</label>
-            <select id="detail-media" required>
-              <option value="新規">新規</option>
-              <option value="知人・紹介">知人・紹介</option>
-              <option value="テックユーザー">テックユーザー</option>
-            </select>
+
+          <!-- Right: table -->
+          <div class="panel hl-main">
+            <div class="panel-header">
+              <div class="panel-title">履歴一覧</div>
+              <div class="panel-meta" id="history-count-label"></div>
+              <div class="panel-actions">
+                <button class="btn btn-ghost btn-sm" id="collapse-all">折りたたむ</button>
+              </div>
+            </div>
+            <div class="table-wrap scrollbox">
+              <table id="history-table-2">
+                <thead>
+                  <tr>
+                    <th width="120">日時</th>
+                    <th width="160">企業名</th>
+                    <th width="100">媒体</th>
+                    <th>内容</th>
+                    <th width="50"></th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body-2"></tbody>
+              </table>
+            </div>
           </div>
         </div>
+      </section>
+
+    </div><!-- /pages-wrapper -->
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ========== MODALS ========== -->
+
+<!-- 履歴詳細モーダル -->
+<div id="detail-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">履歴詳細 / 編集</div>
+      <button class="modal-close close-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="detail-id" />
+      <div class="form-group">
+        <label class="form-label">日時</label>
+        <input type="text" id="detail-created" class="readonly-input" readonly />
+      </div>
+      <div class="form-row">
         <div class="form-group">
-          <label>企業名</label>
+          <label class="form-label">企業名</label>
           <input type="text" id="detail-company" required />
         </div>
         <div class="form-group">
-          <label>内容</label>
-          <textarea id="detail-note" rows="6" required></textarea>
+          <label class="form-label">媒体</label>
+          <select id="detail-media">
+            <option value="新規">新規</option>
+            <option value="知人・紹介">知人・紹介</option>
+            <option value="テックユーザー">テックユーザー</option>
+          </select>
         </div>
-        <div class="modal-actions">
-          <button type="button" id="detail-delete" class="danger-btn">削除</button>
-          <button type="submit" class="primary-btn">保存</button>
-        </div>
-      </form>
+      </div>
+      <div class="form-group">
+        <label class="form-label">内容</label>
+        <textarea id="detail-note" rows="6" required></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="detail-delete">削除</button>
+      <button class="btn btn-secondary btn-sm close-btn">キャンセル</button>
+      <button class="btn btn-primary btn-sm" id="detail-save">保存</button>
     </div>
   </div>
+</div>
 
-  <!-- アプローチモーダル -->
-  <div id="approach-modal" class="modal" aria-hidden="true">
-    <div class="modal-content large glass-modal">
-      <button class="close-btn">&times;</button>
-      <h2 id="approach-modal-title">アプローチ</h2>
-      <div class="approach-layout">
-        <div class="approach-form-side">
-          <div id="approach-contact-details" class="contact-info-card"></div>
-          <h3>新規記録</h3>
-          <form id="approach-form" autocomplete="off">
-            <input type="hidden" id="approach-company-name" />
-            <div class="form-group">
-              <label>媒体</label>
-              <select id="approach-media-select" required>
-                <option value="">選択...</option>
-                <option value="新規">新規</option>
-                <option value="知人・紹介">知人・紹介</option>
-                <option value="テックユーザー">テックユーザー</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>内容</label>
-              <textarea id="approach-note" rows="5" required></textarea>
-            </div>
-            <button type="submit" class="primary-btn full-width">記録する</button>
-          </form>
+<!-- アプローチ記録モーダル -->
+<div id="approach-modal" class="modal">
+  <div class="modal-box large">
+    <div class="modal-header">
+      <div class="modal-title" id="approach-modal-title">アプローチ記録</div>
+      <button class="modal-close close-btn">×</button>
+    </div>
+    <div class="approach-layout">
+      <!-- Left: form -->
+      <div class="approach-left">
+        <div id="approach-contact-details" class="contact-info-box"></div>
+        <div class="form-group">
+          <label class="form-label">媒体</label>
+          <select id="approach-media-select">
+            <option value="">選択...</option>
+            <option value="新規">新規</option>
+            <option value="知人・紹介">知人・紹介</option>
+            <option value="テックユーザー">テックユーザー</option>
+          </select>
         </div>
-        <div class="approach-history-side">
-          <h3>過去の履歴</h3>
-          <div class="scrollbox">
-            <table id="approach-history-table">
-              <thead>
-                <tr>
-                  <th>日時</th>
-                  <th>媒体</th>
-                  <th>内容</th>
-                </tr>
-              </thead>
-              <tbody id="approach-history-table-body"></tbody>
-            </table>
-          </div>
+        <div class="form-group">
+          <label class="form-label">内容</label>
+          <textarea id="approach-note" rows="6" placeholder="アプローチ内容..." required></textarea>
+        </div>
+        <input type="hidden" id="approach-company-name" />
+        <button class="btn btn-primary" id="approach-submit-btn" style="width:100%;">記録する</button>
+      </div>
+      <!-- Right: history -->
+      <div class="approach-right">
+        <div class="approach-right-header">過去の履歴</div>
+        <div class="approach-history-wrap">
+          <table id="approach-history-table">
+            <thead>
+              <tr>
+                <th width="110">日時</th>
+                <th width="80">媒体</th>
+                <th>内容</th>
+              </tr>
+            </thead>
+            <tbody id="approach-history-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- 連絡先追加モーダル (New) -->
-  <div id="contact-modal" class="modal" aria-hidden="true">
-    <div class="modal-content glass-modal">
-      <button class="close-btn">&times;</button>
-      <h2>連絡先追加</h2>
-      <form id="contacts-form" autocomplete="off">
-        <div class="form-group">
-          <label>企業名 <span class="required">*</span></label>
-          <input type="text" id="contact-company" required />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>担当者名</label>
-            <input type="text" id="contact-name" />
-          </div>
-          <div class="form-group">
-            <label>ステータス</label>
-            <select id="contact-status-init">
-              <option value="">未分類</option>
-              <option value="見込">見込</option>
-              <option value="ユーザー">ユーザー</option>
-              <option value="没">没</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="contact-email" />
-          </div>
-          <div class="form-group">
-            <label>電話番号</label>
-            <input type="tel" id="contact-tel" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>メモ</label>
-          <textarea id="contact-memo" rows="3"></textarea>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="primary-btn">追加</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
-
 </html>
